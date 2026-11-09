@@ -7,13 +7,18 @@ declare global {
   interface Window {
     grecaptcha?: {
       ready: (callback: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      execute: (
+        siteKey: string,
+        options: { action: string },
+      ) => Promise<string>;
     };
   }
 }
 
 export default function SurveyPage() {
-  const [stage, setStage] = useState<"consent" | "survey" | "success">("consent");
+  const [stage, setStage] = useState<"consent" | "survey" | "success">(
+    "consent",
+  );
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [sections, setSections] = useState<SurveySection[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -62,9 +67,12 @@ export default function SurveyPage() {
   }, []);
 
   // Helper to obtain Google reCAPTCHA v3 score token
-  const getRecaptchaToken = async (action: string = "submit_survey"): Promise<string> => {
+  const getRecaptchaToken = async (
+    action: string = "submit_survey",
+  ): Promise<string> => {
     const siteKey =
-      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxacZAAAAA_RECAPTCHA_SITE_KEY_PLACEHOLDER";
+      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ||
+      "6LeIxacZAAAAA_RECAPTCHA_SITE_KEY_PLACEHOLDER";
 
     if (typeof window !== "undefined" && window.grecaptcha && siteKey) {
       try {
@@ -98,11 +106,15 @@ export default function SurveyPage() {
 
   const handleStartSurvey = () => {
     if (!ageConfirmed) {
-      setErrorMessage("Please confirm you are between the ages of 18 and 25 to proceed.");
+      setErrorMessage(
+        "Please confirm you are between the ages of 18 and 25 to proceed.",
+      );
       return;
     }
     if (questions.length === 0) {
-      setErrorMessage("Loading questions from database, please wait a moment...");
+      setErrorMessage(
+        "Loading questions from database, please wait a moment...",
+      );
       return;
     }
     setErrorMessage(null);
@@ -113,16 +125,16 @@ export default function SurveyPage() {
 
   const currentSection = sections[currentSectionIndex];
   const currentSectionQuestions = questions.filter(
-    (q) => currentSection && q.sectionId === currentSection.id
+    (q) => currentSection && q.sectionId === currentSection.id,
   );
 
   const validateCurrentSection = (): boolean => {
     const unanswered = currentSectionQuestions.filter(
-      (q) => q.required && answers[q.id] === undefined
+      (q) => q.required && answers[q.id] === undefined,
     );
     if (unanswered.length > 0) {
       setErrorMessage(
-        `Please complete all items in this section before continuing. (${unanswered.length} unanswered)`
+        `Please complete all items in this section before continuing. (${unanswered.length} unanswered)`,
       );
       const el = document.getElementById(`q-${unanswered[0].id}`);
       if (el) {
@@ -155,10 +167,12 @@ export default function SurveyPage() {
     if (!validateCurrentSection()) return;
 
     // Final check for all questions
-    const allUnanswered = questions.filter((q) => q.required && answers[q.id] === undefined);
+    const allUnanswered = questions.filter(
+      (q) => q.required && answers[q.id] === undefined,
+    );
     if (allUnanswered.length > 0) {
       setErrorMessage(
-        `Please complete all questions before submitting. (${allUnanswered.length} items missing)`
+        `Please complete all questions before submitting. (${allUnanswered.length} items missing)`,
       );
       return;
     }
@@ -182,7 +196,9 @@ export default function SurveyPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.error || "An error occurred while submitting your survey.");
+        setErrorMessage(
+          data.error || "An error occurred while submitting your survey.",
+        );
         setIsSubmitting(false);
         return;
       }
@@ -191,7 +207,9 @@ export default function SurveyPage() {
       setStage("success");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      setErrorMessage("Network error. Please check your internet connection and try again.");
+      setErrorMessage(
+        "Network error. Please check your internet connection and try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -199,7 +217,9 @@ export default function SurveyPage() {
 
   const answeredCount = Object.keys(answers).length;
   const progressPercent =
-    questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
+    questions.length > 0
+      ? Math.round((answeredCount / questions.length) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen py-4 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-3xl mx-auto w-full flex flex-col justify-between">
@@ -213,9 +233,10 @@ export default function SurveyPage() {
             <h1 className="serif-title text-xl sm:text-2xl font-bold text-stone-900 leading-tight">
               AI Conversations & Human Relationships
             </h1>
-            <p className="text-xs text-stone-600 italic">
-              Understanding how young adults interact with AI companions and handle relationships
-            </p>
+            <h3 className="serif-title font-bold text-stone-900 leading-tight">
+              Understanding how young adults interact with AI companions and
+              handle relationships
+            </h3>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-mono bg-stone-100 text-stone-700 py-0.5 px-2.5 rounded border border-stone-200 self-start sm:self-auto">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -231,23 +252,32 @@ export default function SurveyPage() {
                 About This Survey & Consent
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Age: 18–25 years · ~4 minutes to complete · 24 multiple-choice questions
+                Age: 18–25 years · ~4 minutes to complete · 24 multiple-choice
+                questions
               </p>
             </div>
 
             <div className="space-y-3.5 text-xs sm:text-sm text-stone-700 leading-relaxed">
               <p>
-                <strong>Study Overview:</strong> This anonymous survey explores how young adults
-                use conversational AI chatbots (such as ChatGPT, Character.AI, or Replika) and how
-                they communicate and resolve differences in everyday relationships.
+                <strong>Study Overview:</strong> This anonymous survey explores
+                how young adults use conversational AI chatbots (such as
+                ChatGPT, Character.AI, or Replika) and how they communicate and
+                resolve differences in everyday relationships.
               </p>
 
               <div className="bg-stone-50 rounded p-3.5 border border-stone-200 text-xs space-y-1.5 text-stone-600">
                 <div className="font-semibold text-stone-900 text-xs">
                   Your Privacy & Data Protection:
                 </div>
-                <p>• <strong>No Personal Details:</strong> We do not ask for or store your name, email, phone number, or address.</p>
-                <p>• <strong>Anonymity:</strong> Your answers are private and mathematically scrambled to ensure honest, anonymous research data.</p>
+                <p>
+                  • <strong>No Personal Details:</strong> We do not ask for or
+                  store your name, email, phone number, or address.
+                </p>
+                <p>
+                  • <strong>Anonymity:</strong> Your answers are private and
+                  mathematically scrambled to ensure honest, anonymous research
+                  data.
+                </p>
               </div>
 
               <div className="pt-1">
@@ -259,8 +289,10 @@ export default function SurveyPage() {
                     className="mt-0.5 h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-500 cursor-pointer flex-shrink-0"
                   />
                   <span className="text-xs text-stone-800 font-medium leading-normal">
-                    I confirm that I am between <strong>18 and 25 years old</strong>, and I consent
-                    to the anonymous use of my responses for academic research and publication.
+                    I confirm that I am between{" "}
+                    <strong>18 and 25 years old</strong>, and I consent to the
+                    anonymous use of my responses for academic research and
+                    publication.
                   </span>
                 </label>
               </div>
@@ -325,7 +357,8 @@ export default function SurveyPage() {
             <div className="sticky top-0 z-30 bg-[#fcfbf9]/95 backdrop-blur-md py-2 border-b border-stone-200">
               <div className="flex justify-between items-center text-[11px] font-mono text-stone-600 mb-1">
                 <span className="font-semibold text-stone-800">
-                  Part {currentSectionIndex + 1} of {sections.length}: {currentSection.title.replace(/^\d+\.\s*/, "").split("(")[0]}
+                  Part {currentSectionIndex + 1} of {sections.length}:{" "}
+                  {currentSection.title.replace(/^\d+\.\s*/, "").split("(")[0]}
                 </span>
                 <span>
                   {answeredCount}/{questions.length} ({progressPercent}%)
@@ -346,7 +379,9 @@ export default function SurveyPage() {
                   {currentSection.title}
                 </h2>
                 {currentSection.description && (
-                  <p className="text-xs text-stone-500 mt-0.5">{currentSection.description}</p>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {currentSection.description}
+                  </p>
                 )}
                 {currentSection.prompt && (
                   <div className="mt-2 bg-stone-50 p-2.5 rounded text-xs font-medium text-stone-800 italic border-l-2 border-stone-400 leading-relaxed">
@@ -366,7 +401,9 @@ export default function SurveyPage() {
                       key={q.id}
                       id={`q-${q.id}`}
                       className={`p-3 sm:p-4 rounded-md transition-all ${
-                        isAnswered ? "bg-white border-stone-300" : "bg-stone-50/70 border-stone-200"
+                        isAnswered
+                          ? "bg-white border-stone-300"
+                          : "bg-stone-50/70 border-stone-200"
                       } border`}
                     >
                       <legend className="text-xs sm:text-sm font-medium text-stone-900 mb-2 float-none w-full leading-snug">
@@ -387,7 +424,9 @@ export default function SurveyPage() {
                           {/* Horizontal Rating Bar with Thumb-Friendly Tap Targets */}
                           <div
                             className={`grid ${
-                              q.scaleMax === 7 ? "grid-cols-7 gap-1 sm:gap-1.5" : "grid-cols-5 gap-1.5 sm:gap-2"
+                              q.scaleMax === 7
+                                ? "grid-cols-7 gap-1 sm:gap-1.5"
+                                : "grid-cols-5 gap-1.5 sm:gap-2"
                             }`}
                           >
                             {q.options.map((opt) => {
@@ -396,7 +435,9 @@ export default function SurveyPage() {
                                 <button
                                   type="button"
                                   key={opt.value}
-                                  onClick={() => handleAnswerChange(q.id, opt.value)}
+                                  onClick={() =>
+                                    handleAnswerChange(q.id, opt.value)
+                                  }
                                   className={`h-10 sm:h-11 rounded flex items-center justify-center font-mono text-xs sm:text-sm transition-all cursor-pointer select-none active:scale-95 ${
                                     selected
                                       ? "bg-stone-900 text-white font-bold shadow-sm ring-2 ring-stone-900"
@@ -412,17 +453,24 @@ export default function SurveyPage() {
                           {/* Endpoint Labels & Feedback below track */}
                           <div className="flex justify-between items-center text-[10px] text-stone-500 pt-0.5 px-0.5">
                             <span className="truncate max-w-[45%]">
-                              1: {q.options[0]?.label.replace(/^\d+\s*-\s*/, "")}
+                              1:{" "}
+                              {q.options[0]?.label.replace(/^\d+\s*-\s*/, "")}
                             </span>
                             {selectedVal ? (
                               <span className="font-semibold text-stone-900 text-[11px] truncate px-1">
-                                {q.options.find((o) => o.value === selectedVal)?.label.replace(/^\d+\s*-\s*/, "")}
+                                {q.options
+                                  .find((o) => o.value === selectedVal)
+                                  ?.label.replace(/^\d+\s*-\s*/, "")}
                               </span>
                             ) : (
                               <span className="text-stone-300">•</span>
                             )}
                             <span className="truncate max-w-[45%] text-right">
-                              {q.scaleMax}: {q.options[q.options.length - 1]?.label.replace(/^\d+\s*-\s*/, "")}
+                              {q.scaleMax}:{" "}
+                              {q.options[q.options.length - 1]?.label.replace(
+                                /^\d+\s*-\s*/,
+                                "",
+                              )}
                             </span>
                           </div>
                         </div>
@@ -435,7 +483,9 @@ export default function SurveyPage() {
                               <button
                                 type="button"
                                 key={opt.value}
-                                onClick={() => handleAnswerChange(q.id, opt.value)}
+                                onClick={() =>
+                                  handleAnswerChange(q.id, opt.value)
+                                }
                                 className={`h-9 sm:h-10 rounded text-xs transition-all font-medium select-none cursor-pointer ${
                                   selected
                                     ? "bg-stone-900 text-white font-bold shadow-sm"
@@ -456,7 +506,9 @@ export default function SurveyPage() {
                               <button
                                 type="button"
                                 key={opt.value}
-                                onClick={() => handleAnswerChange(q.id, opt.value)}
+                                onClick={() =>
+                                  handleAnswerChange(q.id, opt.value)
+                                }
                                 className={`text-left p-2.5 rounded text-xs transition-all font-medium flex items-center justify-between border cursor-pointer select-none ${
                                   selected
                                     ? "bg-stone-900 text-white border-stone-900 shadow-sm"
@@ -464,7 +516,9 @@ export default function SurveyPage() {
                                 }`}
                               >
                                 <span>{opt.label}</span>
-                                {selected && <span className="font-mono text-xs">✓</span>}
+                                {selected && (
+                                  <span className="font-mono text-xs">✓</span>
+                                )}
                               </button>
                             );
                           })}
@@ -534,8 +588,8 @@ export default function SurveyPage() {
                 Response Recorded Successfully
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
-                Thank you for taking the time to participate in this study.
-                Your responses have been recorded anonymously.
+                Thank you for taking the time to participate in this study. Your
+                responses have been recorded anonymously.
               </p>
             </div>
 
