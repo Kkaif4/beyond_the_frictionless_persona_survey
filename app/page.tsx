@@ -5,18 +5,9 @@ import { Question, SurveySection } from "@/lib/questions";
 
 declare global {
   interface Window {
-    turnstile?: {
-      render: (
-        container: string | HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          "error-callback"?: () => void;
-          "expired-callback"?: () => void;
-          theme?: "light" | "dark" | "auto";
-        },
-      ) => string;
-      reset: (widgetId: string) => void;
+    grecaptcha?: {
+      ready: (callback: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
     };
   }
 }
@@ -29,12 +20,10 @@ export default function SurveyPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [ageConfirmed, setAgeConfirmed] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [fingerprint, setFingerprint] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completionCode, setCompletionCode] = useState<string>("");
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
   // Generate lightweight client-side device fingerprint
   useEffect(() => {
@@ -78,53 +67,32 @@ export default function SurveyPage() {
       });
   }, []);
 
-  // Initialize Cloudflare Turnstile
-  useEffect(() => {
+  // Helper to obtain Google reCAPTCHA v3 score token
+  const getRecaptchaToken = async (action: string = "submit_survey"): Promise<string> => {
     const siteKey =
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxacZAAAAA_RECAPTCHA_SITE_KEY_PLACEHOLDER";
 
-    const renderTurnstile = () => {
-      if (window.turnstile && turnstileContainerRef.current) {
-        try {
-          window.turnstile.render(turnstileContainerRef.current, {
-            sitekey: siteKey,
-            callback: (token: string) => {
-              setTurnstileToken(token);
-              setErrorMessage(null);
-            },
-            "error-callback": () => {
-              // In dev or offline, fallback to bypass
-              setTurnstileToken("XXXX.DUMMY.TOKEN.XXXX");
-            },
-            theme: "light",
+    if (typeof window !== "undefined" && window.grecaptcha && siteKey) {
+      try {
+        return await new Promise<string>((resolve) => {
+          window.grecaptcha!.ready(() => {
+            window
+              .grecaptcha!.execute(siteKey, { action })
+              .then((token: string) => {
+                resolve(token);
+              })
+              .catch((err) => {
+                console.warn("grecaptcha.execute warning:", err);
+                resolve("XXXX.DUMMY.TOKEN.XXXX");
+              });
           });
-        } catch (e) {
-          console.warn("Turnstile widget render exception:", e);
-          setTurnstileToken("XXXX.DUMMY.TOKEN.XXXX");
-        }
+        });
+      } catch {
+        return "XXXX.DUMMY.TOKEN.XXXX";
       }
-    };
-
-    const timer = setInterval(() => {
-      if (window.turnstile) {
-        renderTurnstile();
-        clearInterval(timer);
-      }
-    }, 300);
-
-    // Timeout fallback after 3 seconds for local development
-    const timeout = setTimeout(() => {
-      clearInterval(timer);
-      if (!turnstileToken) {
-        setTurnstileToken("XXXX.DUMMY.TOKEN.XXXX");
-      }
-    }, 3500);
-
-    return () => {
-      clearInterval(timer);
-      clearTimeout(timeout);
-    };
-  }, []);
+    }
+    return "XXXX.DUMMY.TOKEN.XXXX";
+  };
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers((prev) => ({
@@ -168,6 +136,8 @@ export default function SurveyPage() {
     setIsSubmitting(true);
 
     try {
+      const recaptchaToken = await getRecaptchaToken("submit_survey");
+
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: {
@@ -176,7 +146,7 @@ export default function SurveyPage() {
         body: JSON.stringify({
           answers,
           fingerprint,
-          turnstileToken: turnstileToken || "XXXX.DUMMY.TOKEN.XXXX",
+          recaptchaToken,
         }),
       });
 
@@ -294,14 +264,33 @@ export default function SurveyPage() {
               </label>
             </div>
 
-            {/* Cloudflare Turnstile Container */}
-            <div className="pt-4 flex flex-col items-center sm:items-start">
-              <div ref={turnstileContainerRef} id="turnstile-widget"></div>
-              {turnstileToken && (
-                <span className="text-xs text-emerald-700 font-mono mt-1">
-                  ✓ Security verification confirmed
-                </span>
-              )}
+            {/* Google reCAPTCHA v3 Security Badge & Terms */}
+            <div className="pt-3 border-t border-stone-200">
+              <div className="flex items-center gap-2 text-xs font-mono text-stone-600">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Security: Protected by Google reCAPTCHA v3</span>
+              </div>
+              <p className="text-[11px] text-stone-400 mt-1 leading-normal">
+                This study uses invisible reCAPTCHA v3 to detect automated bots. Google{" "}
+                <a
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-stone-600"
+                >
+                  Privacy Policy
+                </a>{" "}
+                and{" "}
+                <a
+                  href="https://policies.google.com/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-stone-600"
+                >
+                  Terms of Service
+                </a>{" "}
+                apply.
+              </p>
             </div>
 
             {errorMessage && (

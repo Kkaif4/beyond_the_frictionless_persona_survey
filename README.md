@@ -37,11 +37,11 @@ The platform includes all 24 standardized questions from `questionnaires.md`:
 
 ## 📁 Project Architecture
 
-- `app/page.tsx`: Public academic survey UI (Informed Consent, Turnstile, dynamic questionnaire, completion modal).
+- `app/page.tsx`: Public academic survey UI (Informed Consent, Google reCAPTCHA v3, dynamic questionnaire, completion modal).
 - `app/admin/page.tsx`: Admin dashboard with metrics and one-click SPSS/R CSV export.
 - `app/api/questions/route.ts`: Question loader with automatic MongoDB seeding.
-- `app/api/submit/route.ts`: Submission validation, Turnstile verification, and anti-duplication hash guard.
+- `app/api/submit/route.ts`: Submission validation, Google reCAPTCHA v3 verification, and anti-duplication hash guard.
 - `app/api/admin/export/route.ts`: CSV stream generator with column headers aligned for SPSS/R import.
 - `lib/mongodb.ts`: Cached MongoDB client connection pool.
-- `lib/security.ts`: SHA-256 integrity hasher and Turnstile verification.
+- `lib/security.ts`: SHA-256 integrity hasher and Google reCAPTCHA v3 score verification.
 - `lib/questions.ts`: Standard 24-question battery schema and definitions.

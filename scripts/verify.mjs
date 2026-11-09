@@ -34,7 +34,7 @@ async function runVerification() {
     body: JSON.stringify({
       answers: testAnswers,
       fingerprint: testFingerprint,
-      turnstileToken: "XXXX.DUMMY.TOKEN.XXXX",
+      recaptchaToken: "XXXX.DUMMY.TOKEN.XXXX",
     }),
   });
 
@@ -56,7 +56,7 @@ async function runVerification() {
     body: JSON.stringify({
       answers: testAnswers,
       fingerprint: testFingerprint, // Same fingerprint
-      turnstileToken: "XXXX.DUMMY.TOKEN.XXXX",
+      recaptchaToken: "XXXX.DUMMY.TOKEN.XXXX",
     }),
   });
 

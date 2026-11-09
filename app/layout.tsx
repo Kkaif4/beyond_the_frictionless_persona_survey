@@ -8,6 +8,10 @@ export const metadata: Metadata = {
     "An anonymous academic research study examining conversational AI interactions and interpersonal communication styles.",
 };
 
+const recaptchaSiteKey =
+  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ||
+  "6LeIxacZAAAAA_RECAPTCHA_SITE_KEY_PLACEHOLDER";
+
 export default function RootLayout({
   children,
 }: {
@@ -26,7 +30,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased flex flex-col justify-between">
         {children}
         <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          src={`https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`}
           strategy="afterInteractive"
         />
       </body>

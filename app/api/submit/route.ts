@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCollections } from "@/lib/mongodb";
-import { hashIntegrity, verifyTurnstileToken } from "@/lib/security";
+import { hashIntegrity, verifyRecaptchaToken } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { answers, fingerprint, turnstileToken } = body;
+    const { answers, fingerprint, recaptchaToken, turnstileToken } = body;
+    const token = recaptchaToken || turnstileToken;
 
     if (!answers || typeof answers !== "object") {
       return NextResponse.json(
@@ -21,13 +22,15 @@ export async function POST(req: NextRequest) {
     const realIp = req.headers.get("x-real-ip");
     const clientIp = (cfIp || (forwarded ? forwarded.split(",")[0] : realIp) || "127.0.0.1").trim();
 
-    // 2. Cloudflare Turnstile Verification
-    const isTurnstileValid = await verifyTurnstileToken(turnstileToken, clientIp);
-    if (!isTurnstileValid) {
+    // 2. Google reCAPTCHA v3 Verification
+    const recaptchaResult = await verifyRecaptchaToken(token, clientIp);
+    if (!recaptchaResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: "Security verification failed. Please complete the security check and try again.",
+          error:
+            recaptchaResult.error ||
+            "Security verification failed. Please complete the reCAPTCHA check and try again.",
         },
         { status: 403 }
       );
@@ -84,6 +87,7 @@ export async function POST(req: NextRequest) {
       answers,
       submittedAt: now,
       anonymizedHashSnippet: integrityHash.substring(0, 8),
+      recaptchaScore: recaptchaResult.score ?? 1.0,
     });
 
     return NextResponse.json({

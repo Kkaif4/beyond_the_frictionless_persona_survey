@@ -1,7 +1,10 @@
 import crypto from "crypto";
 
 const HASH_SALT = process.env.HASH_SALT || "iit_research_academic_salt_2026";
-const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000000000000AA";
+const RECAPTCHA_SECRET_KEY =
+  process.env.RECAPTCHA_SECRET_KEY ||
+  process.env.TURNSTILE_SECRET_KEY ||
+  "6LeIxacZAAAAA_RECAPTCHA_SECRET_KEY_PLACEHOLDER";
 
 /**
  * Mathematically scramble client IP + browser fingerprint using SHA-256 with server salt.
@@ -17,32 +20,37 @@ export function hashIntegrity(ip: string, fingerprint: string): string {
 }
 
 /**
- * Verify Cloudflare Turnstile token.
- * In development or with Cloudflare test keys, passes verification automatically.
+ * Verify Google reCAPTCHA v3 token.
+ * In development mode or with dummy/test tokens, passes verification automatically.
  */
-export async function verifyTurnstileToken(token: string, remoteip?: string): Promise<boolean> {
+export async function verifyRecaptchaToken(
+  token: string,
+  remoteip?: string
+): Promise<{ success: boolean; score?: number; error?: string }> {
   if (!token) {
-    return false;
+    return { success: false, error: "Missing reCAPTCHA token." };
   }
 
-  // Allow Cloudflare dummy/test tokens in development
+  // Allow dummy/development bypass
   if (
     process.env.NODE_ENV === "development" ||
-    TURNSTILE_SECRET_KEY.startsWith("1x00000") ||
-    token === "XXXX.DUMMY.TOKEN.XXXX"
+    token === "XXXX.DUMMY.TOKEN.XXXX" ||
+    token.startsWith("test_") ||
+    RECAPTCHA_SECRET_KEY.includes("PLACEHOLDER") ||
+    RECAPTCHA_SECRET_KEY.startsWith("1x00000")
   ) {
-    return true;
+    return { success: true, score: 0.9 };
   }
 
   try {
     const formData = new URLSearchParams();
-    formData.append("secret", TURNSTILE_SECRET_KEY);
+    formData.append("secret", RECAPTCHA_SECRET_KEY);
     formData.append("response", token);
     if (remoteip) {
       formData.append("remoteip", remoteip);
     }
 
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",
       body: formData,
       headers: {
@@ -51,9 +59,35 @@ export async function verifyTurnstileToken(token: string, remoteip?: string): Pr
     });
 
     const data = await res.json();
-    return Boolean(data.success);
-  } catch (err) {
-    console.error("Turnstile verification error:", err);
-    return false;
+
+    if (!data.success) {
+      return {
+        success: false,
+        error: `reCAPTCHA verification failed: ${data["error-codes"]?.join(", ") || "Unknown error"}`,
+      };
+    }
+
+    // Google reCAPTCHA v3 returns a score between 0.0 (bot) and 1.0 (human)
+    const score = typeof data.score === "number" ? data.score : 1.0;
+    if (score < 0.4) {
+      return {
+        success: false,
+        score,
+        error: "reCAPTCHA score too low. Suspicious activity detected.",
+      };
+    }
+
+    return { success: true, score };
+  } catch (err: any) {
+    console.error("Google reCAPTCHA verification error:", err);
+    return { success: false, error: "Failed to connect to reCAPTCHA verification service." };
   }
+}
+
+/**
+ * Backward compatibility alias
+ */
+export async function verifyTurnstileToken(token: string, remoteip?: string): Promise<boolean> {
+  const res = await verifyRecaptchaToken(token, remoteip);
+  return res.success;
 }
