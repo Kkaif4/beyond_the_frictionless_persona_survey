@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 const HASH_SALT = process.env.HASH_SALT || "iit_research_academic_salt_2026";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "academic_secure_password_2026";
 const RECAPTCHA_SECRET_KEY =
   process.env.RECAPTCHA_SECRET_KEY ||
   process.env.TURNSTILE_SECRET_KEY ||
@@ -17,6 +18,26 @@ export function hashIntegrity(ip: string, fingerprint: string): string {
     .createHash("sha256")
     .update(`${normalizedIp}:${normalizedFp}:${HASH_SALT}`)
     .digest("hex");
+}
+
+/**
+ * Generate a deterministic secure token for admin session
+ */
+export function generateAdminToken(): string {
+  return crypto
+    .createHash("sha256")
+    .update(ADMIN_PASSWORD.trim() + ":academic_session_salt")
+    .digest("hex");
+}
+
+/**
+ * Verify whether an admin token or password is valid
+ */
+export function isValidAdminToken(token: string | null | undefined): boolean {
+  if (!token) return false;
+  const expected = generateAdminToken();
+  const trimmed = token.trim();
+  return trimmed === expected || trimmed === ADMIN_PASSWORD.trim();
 }
 
 /**

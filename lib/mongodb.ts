@@ -1,32 +1,46 @@
 import { MongoClient, Db, Collection } from "mongodb";
 
-const uri = process.env.DATABASE_URI || "mongodb+srv://Admin:mongodbPASS@auth.rnlfnk4.mongodb.net/iit_research";
-const options = {};
+const DEFAULT_FALLBACK_URI =
+  "mongodb+srv://Admin:mongodbPASS@auth.rnlfnk4.mongodb.net/iit_research";
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+function getMongoUri(): string {
+  const envUri = process.env.DATABASE_URI;
+  // If undefined or accidentally using placeholder from .env.example
+  if (!envUri || envUri.includes("<username>") || envUri.includes("cluster.mongodb.net")) {
+    return DEFAULT_FALLBACK_URI;
+  }
+  return envUri;
+}
 
 declare global {
   // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (process.env.NODE_ENV === "development") {
+function getClientPromise(): Promise<MongoClient> {
+  const uri = getMongoUri();
+
+  if (process.env.NODE_ENV === "development") {
+    if (!global._mongoClientPromise) {
+      const client = new MongoClient(uri);
+      global._mongoClientPromise = client.connect();
+    }
+    return global._mongoClientPromise;
+  }
+
+  // In production / serverless environments
   if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
+    const client = new MongoClient(uri);
     global._mongoClientPromise = client.connect();
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  return global._mongoClientPromise;
 }
 
-export default clientPromise;
+export default getClientPromise;
 
 export async function getDb(): Promise<Db> {
-  const connectedClient = await clientPromise;
-  return connectedClient.db("iit_research");
+  const client = await getClientPromise();
+  return client.db("iit_research");
 }
 
 export async function getCollections(): Promise<{

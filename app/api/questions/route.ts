@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
 import { standardQuestions, surveySections } from "@/lib/questions";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const { questions: questionsCol } = await getCollections();

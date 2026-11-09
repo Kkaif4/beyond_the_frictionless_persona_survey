@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { getCollections } from "@/lib/mongodb";
 import { hashIntegrity, verifyRecaptchaToken } from "@/lib/security";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

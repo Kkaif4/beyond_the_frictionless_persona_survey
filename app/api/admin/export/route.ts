@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCollections } from "@/lib/mongodb";
+import { isValidAdminToken } from "@/lib/security";
+
+export const dynamic = "force-dynamic";
 
 function escapeCsvValue(val: any): string {
   if (val === null || val === undefined) return "";
@@ -11,6 +14,16 @@ function escapeCsvValue(val: any): string {
 }
 
 export async function GET(req: NextRequest) {
+  const sessionCookie = req.cookies.get("admin_session")?.value;
+  const authHeader = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const tokenQuery = req.nextUrl.searchParams.get("token");
+
+  const providedToken = authHeader || sessionCookie || tokenQuery;
+
+  if (!isValidAdminToken(providedToken)) {
+    return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+  }
+
   try {
     const { responses: responsesCol } = await getCollections();
     const responses = await responsesCol.find({}).sort({ submittedAt: 1 }).toArray();
@@ -43,7 +56,7 @@ export async function GET(req: NextRequest) {
       "dutch_8",
     ];
 
-    const headers = ["Response_ID", "Submitted_At_UTC", ...questionKeys];
+    const headers = ["Response_ID", "Submitted_At_UTC", "reCAPTCHA_Score", ...questionKeys];
     const csvRows: string[] = [headers.join(",")];
 
     for (const record of responses) {
@@ -51,6 +64,7 @@ export async function GET(req: NextRequest) {
       const row = [
         escapeCsvValue(record.responseId || ""),
         escapeCsvValue(record.submittedAt ? new Date(record.submittedAt).toISOString() : ""),
+        escapeCsvValue(record.recaptchaScore ?? 1.0),
         ...questionKeys.map((key) => escapeCsvValue(answers[key] ?? "")),
       ];
       csvRows.push(row.join(","));
@@ -65,10 +79,10 @@ export async function GET(req: NextRequest) {
         "Content-Disposition": `attachment; filename="iit_research_survey_export_${Date.now()}.csv"`,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("CSV Export failed:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to generate CSV export." },
+      { success: false, error: `Failed to generate CSV export: ${error?.message || "DB error"}` },
       { status: 500 }
     );
   }
