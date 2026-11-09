@@ -1,13 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { ScoredSubmission } from "@/app/api/admin/metrics/route";
 
-interface Submission {
-  responseId: string;
-  submittedAt: string;
-  answers: Record<string, any>;
-  anonymizedHashSnippet?: string;
-  recaptchaScore?: number;
+interface SummaryMetrics {
+  totalSubmissions: number;
+  totalValidSubmissions: number;
+  failedCheckCount: number;
+  highTargetMatchCount: number;
+  highTargetMatchPercent: number;
+  moderateMatchCount: number;
+  moderateMatchPercent: number;
+  baselineMatchCount: number;
+  baselineMatchPercent: number;
+  averageAicds: number;
+  averageAvoidance: number;
+  averageCollab: number;
 }
 
 export default function AdminPage() {
@@ -18,17 +26,27 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState("");
   const [dbError, setDbError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [metrics, setMetrics] = useState<{
-    totalCount: number;
-    latestTimestamp: string | null;
-    recentSubmissions: Submission[];
-  }>({
-    totalCount: 0,
-    latestTimestamp: null,
-    recentSubmissions: [],
+  const [searchQuery, setSearchQuery] = useState("");
+  const [badgeFilter, setBadgeFilter] = useState("ALL");
+
+  const [summary, setSummary] = useState<SummaryMetrics>({
+    totalSubmissions: 0,
+    totalValidSubmissions: 0,
+    failedCheckCount: 0,
+    highTargetMatchCount: 0,
+    highTargetMatchPercent: 0,
+    moderateMatchCount: 0,
+    moderateMatchPercent: 0,
+    baselineMatchCount: 0,
+    baselineMatchPercent: 0,
+    averageAicds: 0,
+    averageAvoidance: 0,
+    averageCollab: 0,
   });
 
-  const loadMetrics = async (activeToken: string) => {
+  const [submissions, setSubmissions] = useState<ScoredSubmission[]>([]);
+
+  const loadData = async (activeToken: string) => {
     setIsLoading(true);
     setDbError(null);
     try {
@@ -48,19 +66,15 @@ export default function AdminPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        // Authenticated, but DB query issue occurred
         setIsAuthenticated(true);
         setDbError(data.error || "Unable to reach database.");
         return;
       }
 
       setIsAuthenticated(true);
-      setMetrics({
-        totalCount: data.totalCount || 0,
-        latestTimestamp: data.latestTimestamp,
-        recentSubmissions: data.recentSubmissions || [],
-      });
-    } catch (err: any) {
+      if (data.summary) setSummary(data.summary);
+      if (data.submissions) setSubmissions(data.submissions);
+    } catch {
       setIsAuthenticated(true);
       setDbError("Network error while loading metrics.");
     } finally {
@@ -72,7 +86,7 @@ export default function AdminPage() {
     const savedToken = localStorage.getItem("iit_admin_token");
     if (savedToken) {
       setToken(savedToken);
-      loadMetrics(savedToken);
+      loadData(savedToken);
     } else {
       setIsAuthenticated(false);
     }
@@ -96,7 +110,7 @@ export default function AdminPage() {
         localStorage.setItem("iit_admin_token", receivedToken);
         setToken(receivedToken);
         setIsAuthenticated(true);
-        await loadMetrics(receivedToken);
+        await loadData(receivedToken);
       } else {
         setLoginError(data.error || "Invalid administrative credentials.");
       }
@@ -122,6 +136,12 @@ export default function AdminPage() {
     window.location.href = `/api/admin/export?token=${encodeURIComponent(token)}`;
   };
 
+  const filteredSubmissions = submissions.filter((item) => {
+    const matchesId = item.responseId.toLowerCase().includes(searchQuery.toLowerCase().trim());
+    const matchesBadge = badgeFilter === "ALL" || item.profileBadge === badgeFilter;
+    return matchesId && matchesBadge;
+  });
+
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center font-mono text-xs text-stone-500">
@@ -130,14 +150,14 @@ export default function AdminPage() {
     );
   }
 
-  // 1. Login Screen with Password Eye Toggle
+  // Login Screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="paper-card rounded-lg p-6 sm:p-8 max-w-sm w-full border border-stone-300 shadow-md">
           <div className="border-b border-stone-200 pb-3 mb-5">
             <span className="text-[10px] uppercase font-mono text-stone-400 block tracking-wider">
-              IIT Research Administration
+              Research Administration
             </span>
             <h1 className="serif-title text-xl font-bold text-stone-900 mt-1">
               Admin Control Center
@@ -150,7 +170,6 @@ export default function AdminPage() {
                 Administrative Password
               </label>
 
-              {/* Password Input with Eye Toggle */}
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -167,7 +186,6 @@ export default function AdminPage() {
                   title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    /* Eye-Slash Icon */
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4"
@@ -183,7 +201,6 @@ export default function AdminPage() {
                       />
                     </svg>
                   ) : (
-                    /* Eye Icon */
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4"
@@ -231,17 +248,17 @@ export default function AdminPage() {
     );
   }
 
-  // 2. Authenticated Admin Dashboard
+  // Authenticated Dashboard
   return (
     <div className="min-h-screen py-6 sm:py-10 px-3 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
       {/* Header */}
       <header className="border-b border-stone-300 pb-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <span className="text-[10px] uppercase font-mono text-stone-400 block tracking-wider">
-            IIT Research Platform · Data Control
+            Beyond the Frictionless Persona · Empirical Research
           </span>
           <h1 className="serif-title text-xl sm:text-2xl font-bold text-stone-900">
-            Survey Responses Administration
+            Hypothesis Profiling & Survey Dashboard
           </h1>
         </div>
 
@@ -250,7 +267,14 @@ export default function AdminPage() {
             onClick={handleDownloadCsv}
             className="bg-emerald-800 hover:bg-emerald-700 text-white px-3.5 py-2 text-xs font-semibold rounded shadow flex items-center gap-1.5 cursor-pointer transition active:scale-95"
           >
-            <span>↓</span> Download SPSS/R CSV
+            <span>↓</span> Export to CSV (SPSS/R)
+          </button>
+          <button
+            onClick={() => loadData(token)}
+            disabled={isLoading}
+            className="border border-stone-300 hover:bg-stone-100 text-stone-700 px-3 py-2 text-xs rounded transition cursor-pointer"
+          >
+            {isLoading ? "⟳ ..." : "⟳ Refresh"}
           </button>
           <button
             onClick={handleLogout}
@@ -261,111 +285,232 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Database Error Banner if any */}
+      {/* Database Error Banner */}
       {dbError && (
         <div className="bg-amber-50 border border-amber-300 text-amber-900 text-xs rounded p-3 mb-6 flex items-start gap-2">
           <span className="font-bold">⚠️</span>
           <div>
-            <div className="font-semibold">Database Notice</div>
+            <div className="font-semibold">Notice</div>
             <div>{dbError}</div>
           </div>
         </div>
       )}
 
-      {/* Metrics Cards */}
+      {/* 3 Header Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <div className="paper-card rounded-lg p-4 sm:p-5 border border-stone-200">
-          <span className="text-[10px] font-mono uppercase text-stone-500">Total Valid Responses</span>
+          <span className="text-[10px] font-mono uppercase text-stone-500">
+            Total Valid Submissions
+          </span>
           <div className="text-2xl sm:text-3xl font-bold text-stone-900 mt-1 font-mono">
-            {metrics.totalCount}
+            {summary.totalValidSubmissions}
           </div>
           <span className="text-[10px] text-stone-400 block mt-0.5">
-            Deduplicated & integrity verified
+            {summary.failedCheckCount > 0
+              ? `${summary.failedCheckCount} excluded (failed attention check)`
+              : "All attention checks passed"}
           </span>
         </div>
 
         <div className="paper-card rounded-lg p-4 sm:p-5 border border-stone-200">
-          <span className="text-[10px] font-mono uppercase text-stone-500">Latest Submission</span>
-          <div className="text-xs sm:text-sm font-medium text-stone-800 mt-2 truncate">
-            {metrics.latestTimestamp
-              ? new Date(metrics.latestTimestamp).toLocaleString()
-              : "No responses yet"}
+          <span className="text-[10px] font-mono uppercase text-stone-500">
+            High Target Match Ratio
+          </span>
+          <div className="text-2xl sm:text-3xl font-bold text-rose-700 mt-1 font-mono">
+            {summary.highTargetMatchPercent}%
           </div>
-          <span className="text-[10px] text-stone-400 block mt-0.5">UTC timestamp</span>
+          <span className="text-[10px] text-stone-400 block mt-0.5">
+            High Dependence (≥35) & High Avoidance (≥14)
+          </span>
         </div>
 
         <div className="paper-card rounded-lg p-4 sm:p-5 border border-stone-200">
-          <span className="text-[10px] font-mono uppercase text-stone-500">Analysis Ready</span>
-          <div className="text-xs sm:text-sm font-semibold text-stone-900 mt-2">
-            SPSS & R Compatible
+          <span className="text-[10px] font-mono uppercase text-stone-500">
+            Average AICDS Score
+          </span>
+          <div className="text-2xl sm:text-3xl font-bold text-stone-900 mt-1 font-mono">
+            {summary.averageAicds} <span className="text-sm font-normal text-stone-400">/ 56</span>
           </div>
-          <span className="text-[10px] text-stone-500 block mt-0.5">
-            24 battery variables + reCAPTCHA score
+          <span className="text-[10px] text-stone-400 block mt-0.5">
+            Dependence mean across valid participants
           </span>
         </div>
       </div>
 
-      {/* Submissions Table */}
+      {/* Summary Report Section: Visual Breakdown of Hypothesis Inclination */}
+      <div className="paper-card rounded-lg p-4 sm:p-6 border border-stone-200 mb-6 space-y-4">
+        <h2 className="serif-title text-sm sm:text-base font-bold text-stone-900">
+          Hypothesis Inclination Breakdown (Profile Distribution)
+        </h2>
+
+        <div className="space-y-3">
+          {/* High Target Match */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-medium text-stone-800">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                🔴 High Target Match (Dependence ≥ 35 & Avoidance ≥ 14)
+              </span>
+              <span className="font-mono text-stone-900 font-semibold">
+                {summary.highTargetMatchCount} ({summary.highTargetMatchPercent}%)
+              </span>
+            </div>
+            <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-rose-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${summary.highTargetMatchPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Moderate Match */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-medium text-stone-800">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                🟡 Moderate Match (High Dependence OR High Avoidance)
+              </span>
+              <span className="font-mono text-stone-900 font-semibold">
+                {summary.moderateMatchCount} ({summary.moderateMatchPercent}%)
+              </span>
+            </div>
+            <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-amber-500 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${summary.moderateMatchPercent}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Baseline / Low Match */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs font-medium text-stone-800">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                🟢 Baseline / Low Match (Low Dependence & Low Avoidance)
+              </span>
+              <span className="font-mono text-stone-900 font-semibold">
+                {summary.baselineMatchCount} ({summary.baselineMatchPercent}%)
+              </span>
+            </div>
+            <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+              <div
+                className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${summary.baselineMatchPercent}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Respondent Data Table */}
       <div className="paper-card rounded-lg border border-stone-200 overflow-hidden shadow-sm">
-        <div className="p-3 sm:p-4 border-b border-stone-200 bg-stone-50 flex justify-between items-center">
+        <div className="p-3 sm:p-4 border-b border-stone-200 bg-stone-50 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
           <h2 className="serif-title text-sm sm:text-base font-bold text-stone-900">
-            Recent Submissions
+            Respondent Psychological Profiles
           </h2>
-          <button
-            onClick={() => loadMetrics(token)}
-            disabled={isLoading}
-            className="text-xs text-stone-600 hover:text-stone-900 underline cursor-pointer"
-          >
-            {isLoading ? "Refreshing..." : "Refresh"}
-          </button>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search User ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-2.5 py-1.5 text-xs border border-stone-300 rounded bg-white focus:outline-none focus:border-stone-900"
+            />
+            <select
+              value={badgeFilter}
+              onChange={(e) => setBadgeFilter(e.target.value)}
+              className="px-2.5 py-1.5 text-xs border border-stone-300 rounded bg-white focus:outline-none focus:border-stone-900"
+            >
+              <option value="ALL">All Profiles</option>
+              <option value="HIGH_TARGET_MATCH">🔴 High Target</option>
+              <option value="MODERATE_MATCH">🟡 Moderate</option>
+              <option value="BASELINE_LOW_MATCH">🟢 Baseline</option>
+              <option value="INVALID">⚪ Invalid</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-stone-100 text-stone-600 uppercase font-mono text-[10px] tracking-wider border-b border-stone-200">
               <tr>
-                <th className="p-2.5 sm:p-3">ID</th>
                 <th className="p-2.5 sm:p-3">Timestamp</th>
-                <th className="p-2.5 sm:p-3">Age</th>
-                <th className="p-2.5 sm:p-3">AI Freq</th>
-                <th className="p-2.5 sm:p-3">Relationship</th>
-                <th className="p-2.5 sm:p-3">Hours</th>
-                <th className="p-2.5 sm:p-3">AICDS (Avg)</th>
+                <th className="p-2.5 sm:p-3">Hashed User ID</th>
+                <th className="p-2.5 sm:p-3">AICDS Score</th>
+                <th className="p-2.5 sm:p-3">Avoidance</th>
+                <th className="p-2.5 sm:p-3">Collab</th>
+                <th className="p-2.5 sm:p-3">Validation</th>
+                <th className="p-2.5 sm:p-3">Profile Badge</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-200">
-              {metrics.recentSubmissions.length === 0 ? (
+              {filteredSubmissions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-6 text-center text-stone-400 italic text-xs">
-                    No survey responses recorded yet.
+                    No survey responses match the criteria.
                   </td>
                 </tr>
               ) : (
-                metrics.recentSubmissions.map((sub) => {
-                  const answers = sub.answers || {};
-                  const aicdsValues = [1, 2, 3, 4, 5, 6, 7, 8]
-                    .map((i) => Number(answers[`aicds_${i}`]))
-                    .filter((v) => !isNaN(v) && v > 0);
-                  const aicdsAvg =
-                    aicdsValues.length > 0
-                      ? (aicdsValues.reduce((a, b) => a + b, 0) / aicdsValues.length).toFixed(1)
-                      : "—";
+                filteredSubmissions.map((sub) => {
+                  const s = sub.scores;
+
+                  let badgeEl = null;
+                  if (sub.profileBadge === "HIGH_TARGET_MATCH") {
+                    badgeEl = (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                        🔴 High Target Match
+                      </span>
+                    );
+                  } else if (sub.profileBadge === "MODERATE_MATCH") {
+                    badgeEl = (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                        🟡 Moderate Match
+                      </span>
+                    );
+                  } else if (sub.profileBadge === "BASELINE_LOW_MATCH") {
+                    badgeEl = (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        🟢 Baseline Match
+                      </span>
+                    );
+                  } else {
+                    badgeEl = (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-stone-100 text-stone-600 border border-stone-300">
+                        ⚪ Failed Check
+                      </span>
+                    );
+                  }
 
                   return (
                     <tr key={sub.responseId} className="hover:bg-stone-50 transition">
-                      <td className="p-2.5 sm:p-3 font-mono font-medium text-stone-900 whitespace-nowrap">
-                        {sub.responseId}
-                      </td>
                       <td className="p-2.5 sm:p-3 text-stone-600 whitespace-nowrap">
                         {sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : "—"}
                       </td>
-                      <td className="p-2.5 sm:p-3 text-stone-800">{answers.demo_age || "—"}</td>
-                      <td className="p-2.5 sm:p-3 text-stone-800">{answers.demo_freq || "—"}</td>
-                      <td className="p-2.5 sm:p-3 text-stone-800">{answers.demo_rel || "—"}</td>
-                      <td className="p-2.5 sm:p-3 text-stone-800">{answers.demo_hours || "—"}</td>
-                      <td className="p-2.5 sm:p-3 font-mono font-semibold text-stone-900">
-                        {aicdsAvg}
+                      <td className="p-2.5 sm:p-3 font-mono font-semibold text-stone-900 whitespace-nowrap">
+                        {sub.responseId}
                       </td>
+                      <td className="p-2.5 sm:p-3">
+                        <span className="font-mono font-medium">{s.aicds}/56</span>{" "}
+                        <span className="text-[10px] text-stone-500">
+                          ({s.isHighDependence ? "High" : "Normal"})
+                        </span>
+                      </td>
+                      <td className="p-2.5 sm:p-3">
+                        <span className="font-mono font-medium">{s.avoidance}/20</span>{" "}
+                        <span className="text-[10px] text-stone-500">
+                          ({s.isHighAvoidance ? "High" : "Normal"})
+                        </span>
+                      </td>
+                      <td className="p-2.5 sm:p-3">
+                        <span className="font-mono font-medium">{s.collab}/20</span>{" "}
+                        <span className="text-[10px] text-stone-500">
+                          ({s.isLowCollab ? "Low" : "Normal"})
+                        </span>
+                      </td>
+                      <td className="p-2.5 sm:p-3 font-mono text-stone-700">{s.validation}/28</td>
+                      <td className="p-2.5 sm:p-3 whitespace-nowrap">{badgeEl}</td>
                     </tr>
                   );
                 })

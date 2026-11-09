@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Academic Research Survey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --red-bg: #fef2f2;
+      --red-text: #991b1b;
+      --red-border: #fecaca;
+      --yellow-bg: #fffbeb;
+      --yellow-text: #92400e;
+      --yellow-border: #fde68a;
+      --green-bg: #f0fdf4;
+      --green-text: #166534;
+      --green-border: #bbf7d0;
+      --gray-bg: #f1f5f9;
+      --gray-text: #475569;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+    .header p { font-size: 0.813rem; color: var(--text-muted); }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 0.813rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+    .btn-primary { background: #0f172a; color: #fff; }
+    .btn-primary:hover { background: #1e293b; }
+    .btn-success { background: #065f46; color: #fff; }
+    .btn-success:hover { background: #047857; }
+    .btn-outline { background: #fff; border-color: var(--border); color: var(--text-main); }
+    .btn-outline:hover { background: #f1f5f9; }
+
+    /* Login Screen */
+    #loginView {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .login-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; }
+    .login-card p { font-size: 0.813rem; color: var(--text-muted); margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; color: var(--text-muted); }
+    .input-wrapper { position: relative; }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .eye-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .alert-error {
+      background: var(--red-bg);
+      color: var(--red-text);
+      border: 1px solid var(--red-border);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      margin-bottom: 14px;
+    }
+
+    /* Top Metrics Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .card-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+    .card-value { font-size: 2rem; font-weight: 700; color: var(--text-main); margin-top: 6px; font-feature-settings: "tnum"; }
+    .card-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Summary Breakdown Section */
+    .summary-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .summary-title { font-size: 0.938rem; font-weight: 600; margin-bottom: 16px; }
+    .bars-container { display: flex; flex-direction: column; gap: 14px; }
+    .bar-row { display: flex; flex-direction: column; gap: 6px; }
+    .bar-header { display: flex; justify-content: space-between; font-size: 0.813rem; font-weight: 500; }
+    .bar-track { height: 12px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 9999px; transition: width 0.6s ease; }
+    .fill-red { background: #dc2626; }
+    .fill-yellow { background: #f59e0b; }
+    .fill-green { background: #16a34a; }
+
+    /* Table & Search */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .search-box {
+      padding: 8px 12px;
+      font-size: 0.813rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 240px;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      font-size: 0.813rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.813rem; }
+    th {
+      background: #f1f5f9;
+      padding: 12px 14px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      font-size: 0.688rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+    tr:hover td { background: #f8fafc; }
+
+    /* Profile Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge-red { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow-text); border-color: var(--yellow-border); }
+    .badge-green { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+    .badge-gray { background: var(--gray-bg); color: var(--gray-text); border-color: var(--border); }
+
+    .score-sub { font-size: 0.688rem; color: var(--text-muted); margin-left: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN VIEW -->
+  <div id="loginView" class="container">
+    <div class="login-card">
+      <h2>Research Admin Portal</h2>
+      <p>Academic Survey Scoring & Hypothesis Evaluation</p>
+      
+      <div id="loginError" class="alert-error" style="display: none;"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="adminPass">Administrative Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="adminPass" class="form-control" placeholder="Enter password..." required autofocus>
+            <button type="button" id="togglePassBtn" class="eye-btn" title="Toggle visibility">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Authenticate & Enter →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboardView" class="container" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <p>Beyond the Frictionless Persona · Empirical Research</p>
+        <h1>Hypothesis Profiling & Survey Dashboard</h1>
+      </div>
+      <div class="header-actions">
+        <button id="exportCsvBtn" class="btn btn-success">
+          ↓ Export to CSV (SPSS/R)
+        </button>
+        <button id="refreshBtn" class="btn btn-outline">
+          ⟳ Refresh
+        </button>
+        <button id="logoutBtn" class="btn btn-outline">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Metrics Cards -->
+    <section class="metrics-grid">
+      <div class="card">
+        <div class="card-label">Total Valid Submissions</div>
+        <div class="card-value" id="metricTotalValid">0</div>
+        <div class="card-desc" id="metricInvalidNotice">All attention checks passed</div>
+      </div>
+      <div class="card">
+        <div class="card-label">High Target Match Ratio</div>
+        <div class="card-value" id="metricHighTargetPercent" style="color: #dc2626;">0%</div>
+        <div class="card-desc">High Dependence & High Avoidance</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Average AICDS Score</div>
+        <div class="card-value" id="metricAvgAicds">0 / 56</div>
+        <div class="card-desc">Scale mean across all valid respondents</div>
+      </div>
+    </section>
+
+    <!-- Summary Report Section (Visual Breakdown) -->
+    <section class="summary-section">
+      <h2 class="summary-title">Hypothesis Inclination Breakdown (Profile Distribution)</h2>
+      <div class="bars-container">
+        <!-- High Target Match -->
+        <div class="bar-row">
+          <div class="bar-header">
+            <span>🔴 High Target Match (Dependence ≥ 35 & Avoidance ≥ 14)</span>
+            <span id="labelHighCount">0 (0%)</span>
+          </div>
+          <div class="bar-track">
+            <div id="barHigh" class="bar-fill fill-red" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Moderate Match -->
+        <div class="bar-row">
+          <div class="bar-header">
+            <span>🟡 Moderate Match (High Dependence OR High Avoidance)</span>
+            <span id="labelModerateCount">0 (0%)</span>
+          </div>
+          <div class="bar-track">
+            <div id="barModerate" class="bar-fill fill-yellow" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Baseline / Low Match -->
+        <div class="bar-row">
+          <div class="bar-header">
+            <span>🟢 Baseline / Low Match (Low Dependence & Low Avoidance)</span>
+            <span id="labelLowCount">0 (0%)</span>
+          </div>
+          <div class="bar-track">
+            <div id="barLow" class="bar-fill fill-green" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Respondent Data Table -->
+    <section class="table-card">
+      <div class="table-toolbar">
+        <input type="text" id="searchTable" class="search-box" placeholder="Search by User ID...">
+        <select id="filterBadge" class="filter-select">
+          <option value="ALL">All Profile Badges</option>
+          <option value="HIGH_TARGET_MATCH">🔴 High Target Match</option>
+          <option value="MODERATE_MATCH">🟡 Moderate Match</option>
+          <option value="BASELINE_LOW_MATCH">🟢 Baseline / Low Match</option>
+          <option value="INVALID">⚪ Invalid / Failed Check</option>
+        </select>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Hashed User ID</th>
+              <th>AICDS Score</th>
+              <th>Avoidance Score</th>
+              <th>Collab Score</th>
+              <th>Validation Score</th>
+              <th>Profile Badge</th>
+            </tr>
+          </thead>
+          <tbody id="submissionsTableBody">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                Loading responses from database...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // State
+    let authToken = localStorage.getItem('iit_admin_token') || '';
+    let submissionsData = [];
+
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const adminPassInput = document.getElementById('adminPass');
+    const togglePassBtn = document.getElementById('togglePassBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const searchTable = document.getElementById('searchTable');
+    const filterBadge = document.getElementById('filterBadge');
+    const tableBody = document.getElementById('submissionsTableBody');
+
+    // Toggle password eye
+    togglePassBtn.addEventListener('click', () => {
+      const isPass = adminPassInput.type === 'password';
+      adminPassInput.type = isPass ? 'text' : 'password';
+      togglePassBtn.textContent = isPass ? '🔒' : '👁';
+    });
+
+    // Login submit
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: adminPassInput.value })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success && data.token) {
+          authToken = data.token;
+          localStorage.setItem('iit_admin_token', authToken);
+          showDashboard();
+          loadDashboardData();
+        } else {
+          loginError.textContent = data.error || 'Invalid credentials.';
+          loginError.style.display = 'block';
+        }
+      } catch (err) {
+        loginError.textContent = 'Server connection error. Please try again.';
+        loginError.style.display = 'block';
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', async () => {
+      try { await fetch('/api/admin/login', { method: 'DELETE' }); } catch {}
+      localStorage.removeItem('iit_admin_token');
+      authToken = '';
+      showLogin();
+    });
+
+    // Export CSV
+    exportCsvBtn.addEventListener('click', () => {
+      if (!authToken) return;
+      window.location.href = `/api/admin/export?token=${encodeURIComponent(authToken)}`;
+    });
+
+    // Refresh
+    refreshBtn.addEventListener('click', () => {
+      loadDashboardData();
+    });
+
+    // Search and filter table
+    searchTable.addEventListener('input', renderTable);
+    filterBadge.addEventListener('change', renderTable);
+
+    function showLogin() {
+      loginView.style.display = 'flex';
+      dashboardView.style.display = 'none';
+      adminPassInput.value = '';
+    }
+
+    function showDashboard() {
+      loginView.style.display = 'none';
+      dashboardView.style.display = 'block';
+    }
+
+    // Load data from Antigravity/Next.js API
+    async function loadDashboardData() {
+      try {
+        const res = await fetch(`/api/admin/metrics?token=${encodeURIComponent(authToken)}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('iit_admin_token');
+          authToken = '';
+          showLogin();
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'Failed to load metrics from database.');
+          return;
+        }
+
+        submissionsData = data.submissions || [];
+        updateMetrics(data.summary);
+        renderTable();
+      } catch (err) {
+        console.error('Error fetching admin data:', err);
+      }
+    }
+
+    function updateMetrics(summary) {
+      if (!summary) return;
+      document.getElementById('metricTotalValid').textContent = summary.totalValidSubmissions;
+      document.getElementById('metricHighTargetPercent').textContent = summary.highTargetMatchPercent + '%';
+      document.getElementById('metricAvgAicds').textContent = summary.averageAicds + ' / 56';
+
+      if (summary.failedCheckCount > 0) {
+        document.getElementById('metricInvalidNotice').textContent = `${summary.failedCheckCount} submission(s) excluded (failed check)`;
+      } else {
+        document.getElementById('metricInvalidNotice').textContent = 'All attention checks passed';
+      }
+
+      // Visual Breakdown
+      document.getElementById('labelHighCount').textContent = `${summary.highTargetMatchCount} (${summary.highTargetMatchPercent}%)`;
+      document.getElementById('barHigh').style.width = summary.highTargetMatchPercent + '%';
+
+      document.getElementById('labelModerateCount').textContent = `${summary.moderateMatchCount} (${summary.moderateMatchPercent}%)`;
+      document.getElementById('barModerate').style.width = summary.moderateMatchPercent + '%';
+
+      document.getElementById('labelLowCount').textContent = `${summary.baselineMatchCount} (${summary.baselineMatchPercent}%)`;
+      document.getElementById('barLow').style.width = summary.baselineMatchPercent + '%';
+    }
+
+    function renderTable() {
+      const query = (searchTable.value || '').trim().toLowerCase();
+      const badgeFilter = filterBadge.value;
+
+      const filtered = submissionsData.filter(item => {
+        const matchesQuery = item.responseId.toLowerCase().includes(query);
+        const matchesBadge = badgeFilter === 'ALL' || item.profileBadge === badgeFilter;
+        return matchesQuery && matchesBadge;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
+              No matching survey submissions found.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(item => {
+        const dateStr = item.submittedAt ? new Date(item.submittedAt).toLocaleString() : '—';
+        const scores = item.scores || {};
+
+        let badgeHtml = '';
+        if (item.profileBadge === 'HIGH_TARGET_MATCH') {
+          badgeHtml = '<span class="badge badge-red">🔴 High Target Match</span>';
+        } else if (item.profileBadge === 'MODERATE_MATCH') {
+          badgeHtml = '<span class="badge badge-yellow">🟡 Moderate Match</span>';
+        } else if (item.profileBadge === 'BASELINE_LOW_MATCH') {
+          badgeHtml = '<span class="badge badge-green">🟢 Baseline Match</span>';
+        } else {
+          badgeHtml = '<span class="badge badge-gray">⚪ Failed Check</span>';
+        }
+
+        const aicdsTag = scores.isHighDependence ? '<strong>High</strong>' : 'Normal';
+        const avoidTag = scores.isHighAvoidance ? '<strong>High</strong>' : 'Normal';
+        const collabTag = scores.isLowCollab ? '<strong>Low</strong>' : 'Normal';
+
+        return `
+          <tr>
+            <td style="color: var(--text-muted);">${dateStr}</td>
+            <td style="font-family: monospace; font-weight: 600;">${item.responseId}</td>
+            <td>
+              <span>${scores.aicds || 0}/56</span>
+              <span class="score-sub">(${aicdsTag})</span>
+            </td>
+            <td>
+              <span>${scores.avoidance || 0}/20</span>
+              <span class="score-sub">(${avoidTag})</span>
+            </td>
+            <td>
+              <span>${scores.collab || 0}/20</span>
+              <span class="score-sub">(${collabTag})</span>
+            </td>
+            <td>
+              <span>${scores.validation || 0}/28</span>
+            </td>
+            <td>${badgeHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Auto-login check on page load
+    if (authToken) {
+      showDashboard();
+      loadDashboardData();
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>
