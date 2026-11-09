@@ -101,6 +101,10 @@ export default function SurveyPage() {
       setErrorMessage("Please confirm you are between the ages of 18 and 25 to proceed.");
       return;
     }
+    if (questions.length === 0) {
+      setErrorMessage("Loading questions from database, please wait a moment...");
+      return;
+    }
     setErrorMessage(null);
     setStage("survey");
     setCurrentSectionIndex(0);
@@ -200,22 +204,22 @@ export default function SurveyPage() {
   return (
     <div className="min-h-screen py-4 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-3xl mx-auto w-full flex flex-col justify-between">
       <div>
-        {/* University / Academic Header */}
+        {/* Academic Header */}
         <header className="border-b border-stone-300 pb-3 sm:pb-5 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div>
             <span className="text-[10px] sm:text-xs uppercase tracking-widest font-semibold text-stone-500">
-              Empirical Research Study
+              Research Survey
             </span>
             <h1 className="serif-title text-xl sm:text-2xl font-bold text-stone-900 leading-tight">
-              Human–AI Relational Dynamics
+              AI Conversations & Human Relationships
             </h1>
             <p className="text-xs text-stone-600 italic">
-              Conversational Attachment & Interpersonal Conflict Styles
+              Understanding how young adults interact with AI companions and handle relationships
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-mono bg-stone-100 text-stone-700 py-0.5 px-2.5 rounded border border-stone-200 self-start sm:self-auto">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Anonymous · IRB Compliant
+            100% Anonymous · Confidential
           </div>
         </header>
 
@@ -224,26 +228,26 @@ export default function SurveyPage() {
           <section className="paper-card rounded-lg p-5 sm:p-8 mb-6 border border-stone-300">
             <div className="border-b border-stone-200 pb-3 mb-4">
               <h2 className="serif-title text-lg sm:text-xl font-bold text-stone-900">
-                Informed Consent & Research Protocol
+                About This Survey & Consent
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Target Demographic: 18–25 years · ~4 minutes · 24 standardized questions
+                Age: 18–25 years · ~4 minutes to complete · 24 multiple-choice questions
               </p>
             </div>
 
             <div className="space-y-3.5 text-xs sm:text-sm text-stone-700 leading-relaxed">
               <p>
-                <strong>Study Overview:</strong> You are invited to participate in an anonymous
-                academic research study examining how young adults interact with conversational AI
-                chatbots and how this connects to real-world interpersonal conflict styles.
+                <strong>Study Overview:</strong> This anonymous survey explores how young adults
+                use conversational AI chatbots (such as ChatGPT, Character.AI, or Replika) and how
+                they communicate and resolve differences in everyday relationships.
               </p>
 
               <div className="bg-stone-50 rounded p-3.5 border border-stone-200 text-xs space-y-1.5 text-stone-600">
                 <div className="font-semibold text-stone-900 text-xs">
-                  Zero-Knowledge Privacy Protection:
+                  Your Privacy & Data Protection:
                 </div>
-                <p>• <strong>No PII:</strong> No name, email, phone, or address is ever collected.</p>
-                <p>• <strong>Cryptographic Anonymity:</strong> Device/IP verification is irreversibly scrambled using SHA-256 server salt to reject duplicates while ensuring full confidentiality.</p>
+                <p>• <strong>No Personal Details:</strong> We do not ask for or store your name, email, phone number, or address.</p>
+                <p>• <strong>Anonymity:</strong> Your answers are private and mathematically scrambled to ensure honest, anonymous research data.</p>
               </div>
 
               <div className="pt-1">
@@ -530,14 +534,14 @@ export default function SurveyPage() {
                 Response Recorded Successfully
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
-                Thank you for contributing to this academic study on human–AI relational dynamics.
-                Your data has been safely recorded under zero-knowledge privacy.
+                Thank you for taking the time to participate in this study.
+                Your responses have been recorded anonymously.
               </p>
             </div>
 
             <div className="bg-stone-50 border border-stone-200 rounded p-3 max-w-xs mx-auto text-xs font-mono text-stone-700">
               <span className="text-stone-400 block text-[9px] uppercase tracking-wider">
-                Confirmation Reference
+                Confirmation ID
               </span>
               <span className="text-sm font-bold text-stone-900 mt-0.5 block tracking-wider">
                 {completionCode}
@@ -553,7 +557,7 @@ export default function SurveyPage() {
 
       {/* Academic Footer */}
       <footer className="pt-4 border-t border-stone-200 text-center text-[10px] text-stone-400">
-        IIT Academic Survey Platform · Zero-Knowledge Privacy Architecture
+        Academic Research Study · Anonymous & Confidential
       </footer>
     </div>
   );

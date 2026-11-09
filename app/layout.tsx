@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "Academic Research Survey | Human-AI Relational Dynamics",
+  title: "Research Survey | AI Conversations & Human Relationships",
   description:
-    "An anonymous academic research study examining conversational AI interactions and interpersonal communication styles.",
+    "An anonymous academic survey examining conversational AI usage and everyday communication.",
 };
 
 const recaptchaSiteKey =

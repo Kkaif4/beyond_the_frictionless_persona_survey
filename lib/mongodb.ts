@@ -45,12 +45,14 @@ export async function getDb(): Promise<Db> {
 
 export async function getCollections(): Promise<{
   questions: Collection;
+  sections: Collection;
   responses: Collection;
   integrity: Collection;
 }> {
   const db = await getDb();
   return {
     questions: db.collection("questions_collection"),
+    sections: db.collection("sections_collection"),
     responses: db.collection("responses_collection"),
     integrity: db.collection("integrity_collection"),
   };

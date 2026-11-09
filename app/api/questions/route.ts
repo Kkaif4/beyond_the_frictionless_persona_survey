@@ -6,31 +6,35 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const { questions: questionsCol } = await getCollections();
-    const count = await questionsCol.countDocuments();
+    const { questions: questionsCol, sections: sectionsCol } = await getCollections();
 
-    if (count === 0) {
-      // Auto-seed questions collection if empty
-      await questionsCol.insertMany(standardQuestions.map((q) => ({ ...q })));
-    }
+    // 1. Fetch sections from MongoDB
+    const sectionDocs = await sectionsCol.find({}).sort({ order: 1 }).toArray();
+    const sections =
+      sectionDocs.length > 0
+        ? sectionDocs.map(({ _id, ...rest }) => rest)
+        : surveySections;
 
-    const docs = await questionsCol.find({}).sort({ order: 1 }).toArray();
-
-    // Map out Mongo internal _id for clean API response
-    const questions = docs.map(({ _id, ...rest }) => rest);
+    // 2. Fetch questions from MongoDB
+    const questionDocs = await questionsCol.find({}).sort({ order: 1 }).toArray();
+    const questions =
+      questionDocs.length > 0
+        ? questionDocs.map(({ _id, ...rest }) => rest)
+        : standardQuestions;
 
     return NextResponse.json({
       success: true,
-      sections: surveySections,
-      questions: questions.length > 0 ? questions : standardQuestions,
+      source: questionDocs.length > 0 ? "mongodb" : "fallback",
+      sections,
+      questions,
     });
   } catch (error) {
     console.error("Error loading questions from MongoDB, using fallback:", error);
     return NextResponse.json({
       success: true,
+      source: "fallback",
       sections: surveySections,
       questions: standardQuestions,
-      fallback: true,
     });
   }
 }
